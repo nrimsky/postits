@@ -38,8 +38,8 @@ def main():
     model.to(device)
     model.train()
     params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.Adam(params=params, lr=0.0001)
-    num_epochs = 10
+    optimizer = torch.optim.Adam(params=params, lr=1e-4)
+    num_epochs = 12
     for epoch in range(num_epochs):
         print(f"Epoch {epoch}")
         for images, targets in data_loader:
@@ -76,13 +76,10 @@ def visualise(model, dir="validation", path="results"):
 def plot_bb(image, target, ax):
     boxes = target['boxes']
     boxes = boxes.cpu().to(torch.int32)
-    for b in boxes:
-        if b[0] > b[2]:
-            b[0] = b[2] - 1
-        if b[1] > b[3]:
-            b[1] = b[3] - 1
+    boxes[:, 0] = torch.min(boxes[:, 0], boxes[:, 2] - 1)
+    boxes[:, 1] = torch.min(boxes[:, 1], boxes[:, 3] - 1)
     img = (image.cpu() * 255).to(dtype = torch.uint8)
-    bb = draw_bounding_boxes(img, boxes, colors="red", width=5)
+    bb = draw_bounding_boxes(img, boxes, colors="blue", width=6)
     ax.imshow(bb.permute(1, 2, 0))
     ax.set_xticks([])
     ax.set_yticks([])

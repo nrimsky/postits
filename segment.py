@@ -84,6 +84,8 @@ def plot_bb(image, target, ax):
     img = (image.cpu() * 255).to(dtype = torch.uint8)
     bb = draw_bounding_boxes(img, boxes, colors="red", width=5)
     ax.imshow(bb.permute(1, 2, 0))
+    ax.set_xticks([])
+    ax.set_yticks([])
 
 
 if __name__ == "__main__":

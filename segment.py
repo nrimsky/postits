@@ -9,7 +9,6 @@ from segmentdataset import SegmentationDataset
 from transforms import ToTensor, RandomHorizontalFlip, Compose
 from torchvision.utils import draw_bounding_boxes
 import matplotlib.pyplot as plt
-from torchvision.transforms import functional as F
 import os
 
 def get_transform(train):
@@ -52,6 +51,7 @@ def main():
             print(losses.item())
             losses.backward()
             optimizer.step()
+    torch.save(model, 'finetuned.pt')
     visualise(model=model)  # To assess performance after fine-tuning
 
     
@@ -64,7 +64,7 @@ def visualise(model, dir="validation", path="results"):
     for i, (images, targets) in enumerate(data_loader):
         images = list(image.to(device) for image in images)
         pred = model(images)
-        fig = plt.figure(i, figsize=(20,20))
+        fig = plt.figure(i, figsize=(20,10))
         ax = fig.add_subplot(1, 2, 1)
         plot_bb(image=images[0], target=pred[0], ax=ax)
         ax.set_title("Predicted")

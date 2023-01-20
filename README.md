@@ -11,7 +11,7 @@
 ![image](base_model/result_0.png)
 ![image](base_model/result_1.png)
 
-### After fine-tining
+### After fine-tuning
 
 ![image](results/result_0.png)
 ![image](results/result_1.png)

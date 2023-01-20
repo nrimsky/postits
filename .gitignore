@@ -2,3 +2,4 @@ venv
 .vscode
 *key.json
 __pycache__
+finetuned.pt

@@ -1,36 +1,25 @@
-"""
-Use Google Cloud Vision API to detect handwritten text in image
-"""
+from segment import segment_image
+import os
+import datetime
+from detecttext import detect_text
 
-from google.cloud import vision
-import io
+def get_post_its_text(model_dir, image_path):
+    dir_name = f'postits_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+    print("Outputting images to", dir_name)
+    os.mkdir(dir_name)
+    segment_image(model_dir, image_path, save_output=True, path=dir_name)
+    print("Finished segmenting image")
+    items = []
+    for filename in os.listdir(dir_name):
+        full_path = os.path.abspath(os.path.join(dir_name, filename))
+        text = detect_text(full_path)
+        items.append(text)
+    return items
 
-def detect_text(path):
-    # key.json has service account credentials for service account with access to cloud vision API
-    client = client = vision.ImageAnnotatorClient.from_service_account_json("key.json")
-
-    with io.open(path, 'rb') as image_file:
-        content = image_file.read()
-
-    image = vision.Image(content=content)
-
-    response = client.document_text_detection(image=image)
-
-    for page in response.full_text_annotation.pages:
-        for block in page.blocks:
-            b = []
-            for paragraph in block.paragraphs:
-                p = []
-                for word in paragraph.words:
-                    word_text = ''.join([
-                        symbol.text for symbol in word.symbols
-                    ])
-                    p.append(word_text)
-                b.append(" ".join(p))
-            print(" ".join(p))
-
-    if response.error.message:
-        raise Exception(
-            '{}\nFor more info on error messages, check: '
-            'https://cloud.google.com/apis/design/errors'.format(
-                response.error.message))
+if __name__ == "__main__":
+    texts = get_post_its_text("finetuned.pt", "example.png")
+    print("_____")
+    for t in texts:
+        print(t)
+        print("_____")
+    print("_____")

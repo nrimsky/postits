@@ -10,6 +10,8 @@ from transforms import ToTensor, RandomHorizontalFlip, Compose
 from torchvision.utils import draw_bounding_boxes
 import matplotlib.pyplot as plt
 import os
+from PIL import Image
+from torchvision.transforms import functional as F
 
 def get_transform(train):
     transforms = []
@@ -28,7 +30,10 @@ def make_model():
     return model
 
 
-def main():
+def finetune_model():
+    """
+    Finetune fasterrcnn_resnet50_fpn to segment post its
+    """
     torch.cuda.empty_cache()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     dataset = SegmentationDataset('data', get_transform(train=True))
@@ -53,7 +58,6 @@ def main():
             optimizer.step()
     torch.save(model, 'finetuned.pt')
     visualise(model=model)  # To assess performance after fine-tuning
-
     
 def visualise(model, dir="validation", path="results"):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -84,6 +88,35 @@ def plot_bb(image, target, ax):
     ax.set_xticks([])
     ax.set_yticks([])
 
+def segment_image(model_dir, image_path, save_output=False, path="segmented"):
+    _, fname = os.path.split(image_path)
+    fname = fname.split(".")[0]
+    image = Image.open(image_path).convert("RGB")
+    image = F.to_tensor(image)
+    model = torch.load(model_dir)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    model.eval()
+    image = image.to(device)
+    prediction = model([image])
+    boxes = prediction[0]['boxes']
+    boxes = boxes.cpu().to(torch.int32)
+    boxes[:, 0] = torch.min(boxes[:, 0], boxes[:, 2] - 1)
+    boxes[:, 1] = torch.min(boxes[:, 1], boxes[:, 3] - 1)
+    segmented_images = []
+    for box in boxes:
+        x1, y1, x2, y2 = box
+        segmented_images.append(image[:, y1:y2, x1:x2])
+    if save_output:
+        for i, im in enumerate(segmented_images):
+            fig = plt.figure(i, figsize=(4, 4))
+            ax = fig.add_subplot(1, 1, 1)
+            ax.imshow((im.cpu() * 255).to(dtype = torch.uint8).permute(1, 2, 0))
+            ax.set_xticks([])
+            ax.set_yticks([])
+            fig.savefig(os.path.join(path, f"{fname}_postit_{i}.png"))
+    return segmented_images
+
 
 if __name__ == "__main__":
-    main()
+    segment_image("finetuned.pt", "example.png", save_output=True)
